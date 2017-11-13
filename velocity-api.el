@@ -1,3 +1,5 @@
+;;; -*- lexical-binding: t -*-
+
 (eval-when-compile (require 'names))
 
 (define-namespace velocity-
@@ -6,13 +8,8 @@
 ;; PUBLIC API
 
 (defun search (search-query file-specs)
-  (loop with regexps = (-search-query-to-regexps search-query)
-        for file-spec in file-specs
-        append (let* ((search-config (-search-config-for file-spec))
-                      (backend-id (plist-get search-config :backend))
-                      (backend (plist-get velocity-backends backend-id))
-                      (files (file-expand-wildcards file-spec)))
-                 (-search-files files backend regexps))))
+  (-stream-to-list
+   (-search-stream file-specs search-query)))
 
 (defun visit-result (search-result &optional search-query)
   (let ((visit-fn (or (-lookup-prop (plist-get search-result :filename)
@@ -40,61 +37,83 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INTERNALS
 
+(require 'stream)
 (require 'dash)
 
-(defun -search-files (files backend regexps)
-  (loop for file in files
-        append (let* ((next-section-fn (plist-get backend :next-section-fn))
-                      (filter-result-fn (or (plist-get backend :filter-result-fn)
-                                            'identity))
-                      (results (-search-sections-in-file file
-                                                         regexps
-                                                         next-section-fn)))
-                 (loop for result in results
-                       collect (funcall filter-result-fn
-                                        (plist-put result :filename file))))))
+(defun -search-stream (file-specs search-query)
+  (let ((per-file-spec-result-streams
+         (loop with regexps = (velocity--search-query-to-regexps search-query)
+               for file-spec in file-specs
+               collect (-search-result-stream (-backend-for-file-spec file-spec)
+                                              file-spec regexps))))
+    (stream-concatenate
+     (stream per-file-spec-result-streams))))
 
-(defmacro -with-possibly-opened-file (file &rest body)
-  (declare (indent 1) (debug t))
-  `(let ((file-buffer (get-file-buffer ,file)))
-     (if file-buffer
-         (with-current-buffer file-buffer
-           (save-excursion
-             (goto-char (point-min))
-             ,@body))
-       (with-temp-buffer
-         (insert-file-contents ,file)
-         ,@body))))
+(defun -search-result-stream (backend file-spec regexps)
+  (let ((next-section-fn (plist-get backend :next-section-fn))
+        (filter-result-fn (or (plist-get backend :filter-result-fn)
+                              'identity)))
+    (thread-last file-spec
+      (file-expand-wildcards)
+      (mapcar #'expand-file-name)
+      (stream) ; make computation lazy just before expensive tasks
+      (seq-map (lambda (filename)
+                 (list :filename filename
+                       :buffer (or (get-file-buffer filename)
+                                   (let ((temp-buffer (generate-new-buffer " *temp*")))
+                                     (with-current-buffer temp-buffer
+                                       (insert-file-contents filename))
+                                     temp-buffer)))))
+      (seq-map (lambda (data-buffer)
+                 (-buffer-section-stream next-section-fn data-buffer)))
+      (stream-concatenate)
+      (seq-filter (lambda (data-section)
+                    (-buffer-section-matches-regexps-p data-section regexps)))
+      (seq-map (lambda (data-result)
+                 (with-current-buffer (plist-get data-result :buffer)
+                   (let* ((start (plist-get data-result :start-pos))
+                          (end (plist-get data-result :end-pos))
+                          (snippet (buffer-substring-no-properties start
+                                                                   (min (+ 300 start)
+                                                                        end))))
+                     (string-match "^\\(.*\\)\n\\([\0-\377[:nonascii:]]+\\)" snippet)
+                     (append data-result (list :snippet snippet
+                                               :title (match-string 1 snippet)
+                                               :body (match-string 2 snippet)))))))
+      (seq-map (lambda (data-result)
+                 (funcall filter-result-fn data-result)))
+      )))
 
-(defun -search-sections-in-file (file regexps next-section-fn)
-  (-with-possibly-opened-file
-   file
-   (let ((case-fold-search t))
-     (thread-last next-section-fn
-       (velocity--map-sections
-        (lambda (start end)
-          (and (-region-matches-all-p start end regexps)
-               (-parse-section start end))))
-       (remove nil)))))
+(defun -stream-to-list (stream)
+  "Eagerly traverse STREAM and return a list of its elements."
+  (let (result)
+    (seq-do (lambda (elt)
+              (push elt result))
+            stream)
+    (reverse result)))
 
-(defun -map-sections (fn next-section-fn)
-  (loop for section-bounds = (funcall next-section-fn)
-        while section-bounds
-        collect (save-excursion
-                  (funcall fn
-                           (car section-bounds)
-                           (cdr section-bounds)))))
+(defun -buffer-section-stream (next-section-fn data &optional pos)
+  (stream-make
+   (with-current-buffer (plist-get data :buffer)
+     (save-excursion
+       (goto-char (or pos 1))
+       (let ((bounds (funcall next-section-fn)))
+         (if bounds
+             (cons (append data (list :start-pos (car bounds)
+                                      :end-pos (cdr bounds)))
 
-(defun -parse-section (start end)
-  (let ((snippet (buffer-substring-no-properties start
-                                                 (min (+ 300 start)
-                                                      end))))
-    (string-match "^\\(.*\\)\n\\([\0-\377[:nonascii:]]+\\)" snippet)
-    (list :start-pos start
-          :end-pos end
-          :snippet snippet
-          :title (match-string 1 snippet)
-          :body (match-string 2 snippet))))
+                   (-buffer-section-stream next-section-fn
+                                           data
+                                           (point)))
+           nil))))))
+
+(defun -buffer-section-matches-regexps-p (section regexps)
+  (let* ((buffer (plist-get section :buffer))
+         (start (plist-get section :start-pos))
+         (end (plist-get section :end-pos))
+         (case-fold-search t))
+    (with-current-buffer buffer
+      (velocity--region-matches-all-p start end regexps))))
 
 (defun -region-matches-all-p (start end regexps)
   (-all? (lambda (regexp)
@@ -128,6 +147,11 @@
 
 (defun -generic-visit-result (search-result)
   (find-file-noselect (plist-get search-result :filename)))
+
+(defun -backend-for-file-spec (file-spec)
+  (let* ((search-config (-search-config-for file-spec))
+         (backend-id (plist-get search-config :backend)))
+    (plist-get velocity-backends backend-id)))
 
 (defun -lookup-prop (file property-name)
   (let* ((backend-id (plist-get (-search-config-for file)
