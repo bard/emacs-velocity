@@ -21,17 +21,17 @@
     :nohighlight t
     :candidate-number-limit 15
     :action 'helm-velocity--action-visit
-    :persistent-action 'helm-velocity--persistent-action
+    :persistent-action 'helm-velocity--persistent-action-visit
     :candidates '()
     :volatile t
-    :filtered-candidate-transformer 'helm-velocity--search))
+    :filtered-candidate-transformer 'helm-velocity--candidates-search))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; HELM CALLBACKS
 
-(defun helm-velocity--search (candidates source)
+(defun helm-velocity--candidates-search (candidates source-name)
   (let* ((search-query helm-pattern)
-         (search-section-name (cdr (assoc 'name source)))
+         (search-section-name (cdr (assoc 'name source-name)))
          (search-section-configs (cdr (assoc search-section-name
                                              velocity-searches)))
          (files (loop for config in search-section-configs
@@ -42,14 +42,14 @@
       (velocity-search search-query)
       (-sort (lambda (r1 r2)
                (velocity-sort-results r1 r2 search-query)))
-      (funcall first-n (helm-attr 'candidate-number-limit source))
+      (funcall first-n (helm-attr 'candidate-number-limit source-name))
       (mapcar (lambda (result)
                 (cons (concat (plist-get result :title)
                               " "
                               (plist-get result :body))
                       result))))))
 
-(defun helm-velocity--persistent-action (search-result)
+(defun helm-velocity--persistent-action-visit (search-result)
   (helm-velocity--action-visit search-result)
   (helm-highlight-current-line))
 
