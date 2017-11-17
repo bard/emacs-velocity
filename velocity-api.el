@@ -164,12 +164,12 @@
          (backend (plist-get velocity-backends backend-id)))
     (plist-get backend property-name)))
 
-(defun -search-config-for (file)
+(defun -search-config-for (file-spec)
   (let ((search-configs
-         (loop for section in velocity-searches
-               append (cdr section))))
+         (loop for (name . configs) in velocity-searches
+               append configs)))
     (-find (lambda (config)
-             (-contains? (plist-get config :files) file))
+             (-contains? (plist-get config :files) file-spec))
            search-configs)))
 
 (defun -make-indirect-buffer (base-buffer name)
