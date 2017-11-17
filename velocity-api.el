@@ -12,9 +12,8 @@
    (-search-stream file-specs search-query)))
 
 (defun visit-result (search-result &optional search-query)
-  (let ((visit-fn (or (-lookup-prop (plist-get search-result :filename)
-                                    :visit-fn)
-                      '-generic-visit-result)))
+  (let ((visit-fn (or (plist-get search-result :visit-fn)
+                      'velocity--generic-visit-result)))
 
     (switch-to-buffer (funcall visit-fn search-result))
 
@@ -51,6 +50,8 @@
 
 (defun -search-result-stream (backend file-spec regexps)
   (let ((next-section-fn (plist-get backend :next-section-fn))
+        (visit-fn (or (plist-get backend :visit-fn)
+                      '-generic-visit-result))
         (filter-result-fn (or (plist-get backend :filter-result-fn)
                               'identity)))
     (thread-last file-spec
@@ -80,6 +81,10 @@
                      (append data-result (list :snippet snippet
                                                :title (match-string 1 snippet)
                                                :body (match-string 2 snippet)))))))
+      (seq-map (lambda (data-result)
+                 (if visit-fn
+                     (append data-result (list :visit-fn visit-fn))
+                   data-result)))
       (seq-map (lambda (data-result)
                  (funcall filter-result-fn data-result)))
       )))
