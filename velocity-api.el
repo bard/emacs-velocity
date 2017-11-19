@@ -12,16 +12,15 @@
    (-search-stream file-specs search-query)))
 
 (defun visit-result (search-result &optional search-query)
-  (let ((visit-fn (or (plist-get search-result :visit-fn)
-                      'velocity--generic-visit-result)))
+  (switch-to-buffer (-get-result-buffer search-result))
 
-    (switch-to-buffer (funcall visit-fn search-result))
+  (when-let ((visit-fn (plist-get search-result :visit-fn)))
+    (funcall visit-fn))
 
-    (when search-query
-      (let ((split-pat (split-string search-query))
-            (case-fold-search t))
-
-        (re-search-forward (car split-pat) nil t)))))
+  (when search-query
+    (let ((split-pat (split-string search-query))
+          (case-fold-search t))
+      (re-search-forward (car split-pat) nil t))))
 
 (defun sort-results (res1 res2 search-query)
   (let ((search-exprs (split-string search-query)))
@@ -50,8 +49,7 @@
 
 (defun -search-result-stream (backend file-spec regexps)
   (let ((next-section-fn (plist-get backend :next-section-fn))
-        (visit-fn (or (plist-get backend :visit-fn)
-                      '-generic-visit-result))
+        (visit-fn (plist-get backend :visit-fn))
         (filter-result-fn (or (plist-get backend :filter-result-fn)
                               'identity)))
     (thread-last file-spec
@@ -150,9 +148,6 @@
     (loop for expr in search-exprs
           sum (+ (if (string-match expr string) 1 0)))))
 
-(defun -generic-visit-result (search-result)
-  (find-file-noselect (plist-get search-result :filename)))
-
 (defun -backend-for-file-spec (file-spec)
   (let* ((search-config (-search-config-for file-spec))
          (backend-id (plist-get search-config :backend)))
@@ -171,6 +166,23 @@
     (-find (lambda (config)
              (-contains? (plist-get config :files) file-spec))
            search-configs)))
+
+(defun -get-result-buffer (search-result)
+  (let ((file-buffer (-get-file-buffer (plist-get search-result :filename)))
+        (start-pos (plist-get search-result :start-pos))
+        (end-pos (plist-get search-result :end-pos))
+        (title (plist-get search-result :title)))
+    (if (with-current-buffer file-buffer
+          (and (eq start-pos (point-min))
+               (eq end-pos (point-max))))
+        file-buffer
+      (with-current-buffer (-make-indirect-buffer file-buffer title)
+        (narrow-to-region start-pos end-pos)
+        (current-buffer)))))
+
+(defun -get-file-buffer (filename)
+  (or (get-file-buffer filename)
+      (find-file-noselect filename)))
 
 (defun -make-indirect-buffer (base-buffer name)
   "Create indirect buffer of `base-buffer' and name it `name'. If

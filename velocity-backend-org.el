@@ -16,19 +16,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CALLBACKS
 
-(defun velocity-org-visit (candidate)
-  (let* ((start-pos (plist-get candidate :start-pos))
-         (end-pos (plist-get candidate :end-pos))
-         (title (plist-get candidate :title))
-         (file (plist-get candidate :filename))
-         (buffer (velocity--make-indirect-buffer (or (get-file-buffer file)
-                                                     (find-file-noselect file))
-                                                 title)))
-    (with-current-buffer buffer
-      (goto-char start-pos)
-      (org-show-subtree)
-      (narrow-to-region start-pos end-pos))
-    buffer))
+(defun velocity-org-visit ()
+  (goto-char (point-min))
+  (org-show-subtree))
 
 (defun velocity-org-filter-result (basic-result)
   (let* ((snippet-lines (split-string (plist-get basic-result :snippet) "\n"))
