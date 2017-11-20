@@ -37,8 +37,6 @@
 (defvar velocity-backends
   '())
 
-(require 'velocity-backends)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; USER API
 
@@ -51,6 +49,7 @@
 ;;;##autoload
 (defun helm-velocity ()
   (interactive)
+  (require 'velocity-backends)
   (require 'helm)
   (require 'velocity-frontend-helm)
   (helm-velocity-1))
@@ -58,6 +57,7 @@
 ;;;##autoload
 (defun ivy-velocity ()
   (interactive)
+  (require 'velocity-backends)
   (require 'ivy)
   (require 'velocity-frontend-ivy)
   (error "Not implemented yet."))
