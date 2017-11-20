@@ -10,6 +10,7 @@
 (velocity-register-backend
  'org
  (list :visit-fn 'velocity-org-visit
+       :create-fn 'velocity-org-create
        :filter-result-fn 'velocity-org-filter-result
        :next-section-fn 'velocity-org-next-section))
 
@@ -19,6 +20,12 @@
 (defun velocity-org-visit ()
   (goto-char (point-min))
   (org-show-subtree))
+
+(defun velocity-org-create (title)
+  (goto-char (point-min))
+  (insert "* " title "\n\n")
+  (list :start-pos (point-min)
+        :end-pos (point)))
 
 (defun velocity-org-filter-result (basic-result)
   (let* ((snippet-lines (split-string (plist-get basic-result :snippet) "\n"))

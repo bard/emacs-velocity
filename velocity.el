@@ -31,6 +31,9 @@
 (defvar velocity-searches
   '())
 
+(defvar velocity-targets
+  '())
+
 (defvar velocity-backends
   '())
 

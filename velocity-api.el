@@ -22,6 +22,22 @@
           (case-fold-search t))
       (re-search-forward (car split-pat) nil t))))
 
+(defun creation-candidates (user-input)
+  (loop for target-def in velocity-targets
+        collect (let* ((target-pattern (plist-get target-def :file))
+                       (target-path (format target-pattern user-input)))
+                  (list :filename target-path
+                        :backend (plist-get target-def :backend)))))
+
+(defun create (note)
+  (let ((filename (plist-get note :filename))
+        (create-fn (plist-get note :create-fn))
+        (visit-fn (plist-get note :visit-fn))
+        (title (plist-get note :title)))
+    (visit-result (append note
+                          (with-current-buffer (-get-file-buffer filename)
+                            (funcall create-fn title))))))
+
 (defun sort-results (res1 res2 search-query)
   (let ((search-exprs (split-string search-query)))
     (> (-score-result res1 search-exprs)
