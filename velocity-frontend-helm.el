@@ -7,15 +7,15 @@
 ;; COMMANDS
 
 (defun helm-velocity-1 ()
-  (helm :sources (cons (helm-velocity--source-for-create)
-                       (loop for (name . def) in velocity-searches
-                             collect (helm-velocity--source-for-search name)))
+  (helm :sources (append (loop for (name . def) in velocity-searches
+                               collect (helm-velocity--make-source-for-search name))
+                         (list helm-source-velocity-create))
         :buffer "*helm-velocity*"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; HELM SOURCE
 
-(defun helm-velocity--source-for-search (search-name)
+(defun helm-velocity--make-source-for-search (search-name)
   (helm-build-sync-source
       search-name
     :requires-pattern 3
@@ -27,11 +27,12 @@
     :volatile t
     :filtered-candidate-transformer 'helm-velocity--candidates-search))
 
-(defun helm-velocity--source-for-create ()
+(defvar helm-source-velocity-create
   (helm-build-sync-source
       "Create"
-    :requires-pattern 12
+    :requires-pattern 15
     :nohighlight t
+    :volatile t
     :filtered-candidate-transformer 'helm-velocity--candidates-create
     :action 'helm-velocity--action-create))
 
