@@ -40,15 +40,13 @@
 (require 'velocity-backends)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; CONFIGURATION COMMANDS
+;; USER API
 
+;;;##autoload
 (defun velocity-define-searches (&rest defs)
   (setq velocity-searches
         (loop for (name . searches) in defs
               collect (cons name searches))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; INTERACTIVE COMMANDS
 
 ;;;##autoload
 (defun helm-velocity ()

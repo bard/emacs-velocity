@@ -36,8 +36,6 @@
     (goto-char (point-max))
     (cons 1 (point))))
 
-;; (debug  (velocity--move-to-next-section-by-separator "^\\# "))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; META
 

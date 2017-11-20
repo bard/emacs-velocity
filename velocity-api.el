@@ -7,14 +7,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; PUBLIC API
 
-(defun search (search-query file-specs)
+(defun search (search-query filesets)
   (-stream-to-list
-   (-search-stream file-specs search-query)))
+   (-result-stream filesets search-query)))
 
-(defun visit-result (search-result &optional search-query)
-  (switch-to-buffer (-get-result-buffer search-result))
+(defun visit (content-handle &optional search-query)
+  (switch-to-buffer (-get-content-buffer content-handle))
 
-  (when-let ((visit-fn (plist-get search-result :visit-fn)))
+  (when-let ((visit-fn (plist-get content-handle :visit-fn)))
     (funcall visit-fn))
 
   (when search-query
@@ -22,27 +22,29 @@
           (case-fold-search t))
       (re-search-forward (car split-pat) nil t))))
 
-(defun creation-candidates (user-input)
+(defun create (content-handle)
+  (let ((filename (plist-get content-handle :filename))
+        (create-fn (plist-get content-handle :create-fn))
+        (visit-fn (plist-get content-handle :visit-fn))
+        (title (plist-get content-handle :title)))
+    (visit (append content-handle
+                   (with-current-buffer (-get-file-buffer filename)
+                     (funcall create-fn title))))))
+
+;; XXX accesses global
+(defun creation-candidates (title)
   (loop for target-def in velocity-targets
         collect (let* ((target-pattern (plist-get target-def :file))
-                       (target-path (format target-pattern user-input)))
+                       (target-path (format target-pattern title)))
                   (list :filename target-path
                         :backend (plist-get target-def :backend)))))
 
-(defun create (note)
-  (let ((filename (plist-get note :filename))
-        (create-fn (plist-get note :create-fn))
-        (visit-fn (plist-get note :visit-fn))
-        (title (plist-get note :title)))
-    (visit-result (append note
-                          (with-current-buffer (-get-file-buffer filename)
-                            (funcall create-fn title))))))
-
-(defun sort-results (res1 res2 search-query)
+(defun compare (content-handle-1 content-handle-2 search-query)
   (let ((search-exprs (split-string search-query)))
-    (> (-score-result res1 search-exprs)
-       (-score-result res2 search-exprs))))
+    (> (-score-result content-handle-1 search-exprs)
+       (-score-result content-handle-2 search-exprs))))
 
+;; XXX accesses global
 (defun register-backend (name callbacks)
   (setq velocity-backends
         (plist-put velocity-backends name
@@ -54,21 +56,21 @@
 (require 'stream)
 (require 'dash)
 
-(defun -search-stream (file-specs search-query)
-  (let ((per-file-spec-result-streams
-         (loop with regexps = (velocity--search-query-to-regexps search-query)
-               for file-spec in file-specs
-               collect (-search-result-stream (-backend-for-file-spec file-spec)
-                                              file-spec regexps))))
+(defun -result-stream (filesets search-query)
+  (let ((result-streams
+         (loop with regexps = (-search-query-to-regexps search-query)
+               for fileset in filesets
+               collect (-per-fileset-result-stream (-backend-for-fileset fileset)
+                                                   fileset regexps))))
     (stream-concatenate
-     (stream per-file-spec-result-streams))))
+     (stream result-streams))))
 
-(defun -search-result-stream (backend file-spec regexps)
+(defun -per-fileset-result-stream (backend fileset regexps)
   (let ((next-section-fn (plist-get backend :next-section-fn))
         (visit-fn (plist-get backend :visit-fn))
         (filter-result-fn (or (plist-get backend :filter-result-fn)
                               'identity)))
-    (thread-last file-spec
+    (thread-last fileset
       (file-expand-wildcards)
       (mapcar #'expand-file-name)
       (stream) ; make computation lazy just before expensive tasks
@@ -79,28 +81,30 @@
                                      (with-current-buffer temp-buffer
                                        (insert-file-contents filename))
                                      temp-buffer)))))
-      (seq-map (lambda (data-buffer)
-                 (-buffer-section-stream next-section-fn data-buffer)))
+      (seq-map (lambda (content-handle-with-buffer)
+                 (-buffer-section-stream next-section-fn
+                                         content-handle-with-buffer)))
       (stream-concatenate)
-      (seq-filter (lambda (data-section)
-                    (-buffer-section-matches-regexps-p data-section regexps)))
-      (seq-map (lambda (data-result)
-                 (with-current-buffer (plist-get data-result :buffer)
-                   (let* ((start (plist-get data-result :start-pos))
-                          (end (plist-get data-result :end-pos))
+      (seq-filter (lambda (content-handle-with-section)
+                    (-buffer-section-matches-regexps-p content-handle-with-section
+                                                       regexps)))
+      (seq-map (lambda (content-handle)
+                 (with-current-buffer (plist-get content-handle :buffer)
+                   (let* ((start (plist-get content-handle :start-pos))
+                          (end (plist-get content-handle :end-pos))
                           (snippet (buffer-substring-no-properties start
                                                                    (min (+ 300 start)
                                                                         end))))
                      (string-match "^\\(.*\\)\n\\([\0-\377[:nonascii:]]+\\)" snippet)
-                     (append data-result (list :snippet snippet
-                                               :title (match-string 1 snippet)
-                                               :body (match-string 2 snippet)))))))
-      (seq-map (lambda (data-result)
+                     (append content-handle (list :snippet snippet
+                                                  :title (match-string 1 snippet)
+                                                  :body (match-string 2 snippet)))))))
+      (seq-map (lambda (content-handle)
                  (if visit-fn
-                     (append data-result (list :visit-fn visit-fn))
-                   data-result)))
-      (seq-map (lambda (data-result)
-                 (funcall filter-result-fn data-result)))
+                     (append content-handle (list :visit-fn visit-fn))
+                   content-handle)))
+      (seq-map (lambda (content-handle)
+                 (funcall filter-result-fn content-handle)))
       )))
 
 (defun -stream-to-list (stream)
@@ -164,8 +168,8 @@
     (loop for expr in search-exprs
           sum (+ (if (string-match expr string) 1 0)))))
 
-(defun -backend-for-file-spec (file-spec)
-  (let* ((search-config (-search-config-for file-spec))
+(defun -backend-for-fileset (fileset)
+  (let* ((search-config (-search-config-for fileset))
          (backend-id (plist-get search-config :backend)))
     (plist-get velocity-backends backend-id)))
 
@@ -175,19 +179,19 @@
          (backend (plist-get velocity-backends backend-id)))
     (plist-get backend property-name)))
 
-(defun -search-config-for (file-spec)
+(defun -search-config-for (fileset)
   (let ((search-configs
          (loop for (name . configs) in velocity-searches
                append configs)))
     (-find (lambda (config)
-             (-contains? (plist-get config :files) file-spec))
+             (-contains? (plist-get config :files) fileset))
            search-configs)))
 
-(defun -get-result-buffer (search-result)
-  (let ((file-buffer (-get-file-buffer (plist-get search-result :filename)))
-        (start-pos (plist-get search-result :start-pos))
-        (end-pos (plist-get search-result :end-pos))
-        (title (plist-get search-result :title)))
+(defun -get-content-buffer (content-handle)
+  (let ((file-buffer (-get-file-buffer (plist-get content-handle :filename)))
+        (start-pos (plist-get content-handle :start-pos))
+        (end-pos (plist-get content-handle :end-pos))
+        (title (plist-get content-handle :title)))
     (if (with-current-buffer file-buffer
           (and (eq start-pos (point-min))
                (eq end-pos (point-max))))

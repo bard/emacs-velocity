@@ -51,7 +51,7 @@
     (thread-last files
       (velocity-search search-query)
       (-sort (lambda (r1 r2)
-               (velocity-sort-results r1 r2 search-query)))
+               (velocity-compare r1 r2 search-query)))
       (funcall first-n (helm-attr 'candidate-number-limit source-name))
       (mapcar (lambda (result)
                 (cons (concat (plist-get result :title)
@@ -59,12 +59,12 @@
                               (plist-get result :body))
                       result))))))
 
-(defun helm-velocity--persistent-action-visit (search-result)
-  (helm-velocity--action-visit search-result)
+(defun helm-velocity--persistent-action-visit (content-handle)
+  (helm-velocity--action-visit content-handle)
   (helm-highlight-current-line))
 
-(defun helm-velocity--action-visit (search-result)
-  (velocity-visit-result search-result helm-pattern))
+(defun helm-velocity--action-visit (content-handle)
+  (velocity-visit content-handle helm-pattern))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; HELM CALLBACKS FOR CREATE SOURCE
@@ -82,15 +82,15 @@
                                                 'face highlight-face))
                         target))))
 
-(defun helm-velocity--action-create (candidate)
+(defun helm-velocity--action-create (content-handle)
   (let* ((title (string-trim helm-pattern))
-         (filename (plist-get candidate :filename))
-         (backend-id (plist-get candidate :backend))
+         (filename (plist-get content-handle :filename))
+         (backend-id (plist-get content-handle :backend))
          (backend (plist-get velocity-backends backend-id))
          (visit-fn (plist-get backend :visit-fn))
          (create-fn (plist-get backend :create-fn)))
 
-    (velocity-create (append candidate
+    (velocity-create (append content-handle
                              (list :title title
                                    :visit-fn visit-fn
                                    :create-fn create-fn)))))
