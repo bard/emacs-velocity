@@ -45,12 +45,10 @@
          (search-section-name (cdr (assoc 'name source-name)))
          (search-section-configs (cdr (assoc search-section-name
                                              velocity-searches)))
-         (files (loop for config in search-section-configs
-                      append (plist-get config :files)))
          (first-n (lambda (n list) (-slice list 0 n))))
 
-    (thread-last files
-      (velocity-search search-query)
+    (thread-last search-query
+      (velocity-search search-section-configs)
       (-sort (lambda (r1 r2)
                (velocity-compare r1 r2 search-query)))
       (funcall first-n (helm-attr 'candidate-number-limit source-name))

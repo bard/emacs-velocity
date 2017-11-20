@@ -7,9 +7,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; PUBLIC API
 
-(defun search (search-query filesets)
+(defun search (search-configs search-query)
   (-stream-to-list
-   (-result-stream filesets search-query)))
+   (stream-concatenate
+    (stream (loop for search-config in search-configs
+                  with regexps = (-search-query-to-regexps search-query)
+                  collect (let* ((backend-id (plist-get search-config :backend))
+                                 (backend (plist-get velocity-backends backend-id))
+                                 (fileset (plist-get search-config :files)))
+                            (-result-stream (plist-get search-config :files)
+                                            regexps
+                                            (plist-get backend :next-section-fn)
+                                            (plist-get backend :visit-fn)
+                                            (or (plist-get backend :filter-result-fn)
+                                                'identity))))))))
 
 (defun visit (content-handle &optional search-query)
   (switch-to-buffer (-get-content-buffer content-handle))
@@ -56,56 +67,47 @@
 (require 'stream)
 (require 'dash)
 
-(defun -result-stream (filesets search-query)
-  (let ((result-streams
-         (loop with regexps = (-search-query-to-regexps search-query)
-               for fileset in filesets
-               collect (-per-fileset-result-stream (-backend-for-fileset fileset)
-                                                   fileset regexps))))
-    (stream-concatenate
-     (stream result-streams))))
-
-(defun -per-fileset-result-stream (backend fileset regexps)
-  (let ((next-section-fn (plist-get backend :next-section-fn))
-        (visit-fn (plist-get backend :visit-fn))
-        (filter-result-fn (or (plist-get backend :filter-result-fn)
-                              'identity)))
-    (thread-last fileset
-      (file-expand-wildcards)
-      (mapcar #'expand-file-name)
-      (stream) ; make computation lazy just before expensive tasks
-      (seq-map (lambda (filename)
-                 (list :filename filename
-                       :buffer (or (get-file-buffer filename)
-                                   (let ((temp-buffer (generate-new-buffer " *temp*")))
-                                     (with-current-buffer temp-buffer
-                                       (insert-file-contents filename))
-                                     temp-buffer)))))
-      (seq-map (lambda (content-handle-with-buffer)
-                 (-buffer-section-stream next-section-fn
-                                         content-handle-with-buffer)))
-      (stream-concatenate)
-      (seq-filter (lambda (content-handle-with-section)
-                    (-buffer-section-matches-regexps-p content-handle-with-section
-                                                       regexps)))
-      (seq-map (lambda (content-handle)
-                 (with-current-buffer (plist-get content-handle :buffer)
-                   (let* ((start (plist-get content-handle :start-pos))
-                          (end (plist-get content-handle :end-pos))
-                          (snippet (buffer-substring-no-properties start
-                                                                   (min (+ 300 start)
-                                                                        end))))
-                     (string-match "^\\(.*\\)\n\\([\0-\377[:nonascii:]]+\\)" snippet)
-                     (append content-handle (list :snippet snippet
-                                                  :title (match-string 1 snippet)
-                                                  :body (match-string 2 snippet)))))))
-      (seq-map (lambda (content-handle)
-                 (if visit-fn
-                     (append content-handle (list :visit-fn visit-fn))
-                   content-handle)))
-      (seq-map (lambda (content-handle)
-                 (funcall filter-result-fn content-handle)))
-      )))
+(defun -result-stream (fileset
+                       regexps
+                       next-section-fn
+                       visit-fn
+                       filter-result-fn)
+  (thread-last fileset
+    (-mapcat #'file-expand-wildcards)
+    (-map #'expand-file-name)
+    (stream) ; make computation lazy just before expensive tasks
+    (seq-map (lambda (filename)
+               (list :filename filename
+                     :buffer (or (get-file-buffer filename)
+                                 (let ((temp-buffer (generate-new-buffer " *temp*")))
+                                   (with-current-buffer temp-buffer
+                                     (insert-file-contents filename))
+                                   temp-buffer)))))
+    (seq-map (lambda (content-handle-with-buffer)
+               (-buffer-section-stream next-section-fn
+                                       content-handle-with-buffer)))
+    (stream-concatenate)
+    (seq-filter (lambda (content-handle-with-section)
+                  (-buffer-section-matches-regexps-p content-handle-with-section
+                                                     regexps)))
+    (seq-map (lambda (content-handle)
+               (with-current-buffer (plist-get content-handle :buffer)
+                 (let* ((start (plist-get content-handle :start-pos))
+                        (end (plist-get content-handle :end-pos))
+                        (snippet (buffer-substring-no-properties start
+                                                                 (min (+ 300 start)
+                                                                      end))))
+                   (string-match "^\\(.*\\)\n\\([\0-\377[:nonascii:]]+\\)" snippet)
+                   (append content-handle (list :snippet snippet
+                                                :title (match-string 1 snippet)
+                                                :body (match-string 2 snippet)))))))
+    (seq-map (lambda (content-handle)
+               (if visit-fn
+                   (append content-handle (list :visit-fn visit-fn))
+                 content-handle)))
+    (seq-map (lambda (content-handle)
+               (funcall filter-result-fn content-handle)))
+    ))
 
 (defun -stream-to-list (stream)
   "Eagerly traverse STREAM and return a list of its elements."
@@ -167,11 +169,6 @@
   (let ((case-fold-search t))
     (loop for expr in search-exprs
           sum (+ (if (string-match expr string) 1 0)))))
-
-(defun -backend-for-fileset (fileset)
-  (let* ((search-config (-search-config-for fileset))
-         (backend-id (plist-get search-config :backend)))
-    (plist-get velocity-backends backend-id)))
 
 (defun -lookup-prop (file property-name)
   (let* ((backend-id (plist-get (-search-config-for file)
