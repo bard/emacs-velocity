@@ -25,6 +25,7 @@
     :persistent-action 'helm-velocity--persistent-action-visit
     :candidates '()
     :volatile t
+    :follow 1
     :filtered-candidate-transformer 'helm-velocity--candidates-search))
 
 (defvar helm-source-velocity-create
