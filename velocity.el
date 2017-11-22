@@ -1,11 +1,11 @@
-;;; emacs-velocity.el --- Quickly search notes in multiple formats
+;;; velocity.el --- Quickly search notes in multiple formats
 
 ;; Copyright (C) 2017 Massimiliano Mirra
 
 ;; Author: Massimiliano Mirra <hyperstruct@gmail.com>
 ;; Version: 1.0
 ;; Maintainer: Massimiliano Mirra <hyperstruct@gmail.com>
-;; Keywords: notes, search, org, markdown
+;; Keywords: files, hypermedia, matching, outlines
 ;; URL: http://github.com/bard/emacs-velocity
 ;; Package-Requires: ((dash "2.12"))
 
@@ -24,7 +24,13 @@
 
 ;;; Commentary:
 
-;; Please see README.md.
+;; Search, access, create notes in multiple formats (currently: org
+;; and markdown), with a flexible definition of what a "note" is
+;; (entire file, level-1 heading, level-2 heading), organizing results
+;; in conceptual sections (e.g. "Programming Notes", "Package
+;; READMEs").
+
+;; Inspired to Notational Velocity.
 
 ;;; Code:
 
