@@ -8,11 +8,18 @@
 ;; REGISTRATION
 
 (velocity-register-backend
- 'org
+ 'org-heading-1
  (list :visit-fn 'velocity-org-visit
-       :create-fn 'velocity-org-create
+       :create-fn 'velocity-org-create/heading-1
        :filter-result-fn 'velocity-org-filter-result
-       :next-section-fn 'velocity-org-next-section))
+       :next-section-fn 'velocity-org-get-content-unit/heading-1))
+
+(velocity-register-backend
+ 'org-heading-2
+ (list :visit-fn 'velocity-org-visit
+       :create-fn 'velocity-org-create/heading-1
+       :filter-result-fn 'velocity-org-filter-result
+       :next-section-fn 'velocity-org-get-content-unit/heading-2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CALLBACKS
@@ -21,7 +28,7 @@
   (goto-char (point-min))
   (org-show-subtree))
 
-(defun velocity-org-create (title)
+(defun velocity-org-create/heading-1 (title)
   (goto-char (point-min))
   (insert "* " title "\n\n")
   (list :start-pos (point-min)
@@ -35,8 +42,11 @@
       (plist-put :title snippet-title)
       (plist-put :body snippet-body))))
 
-(defun velocity-org-next-section (from-pos)
+(defun velocity-org-get-content-unit/heading-1 (from-pos)
   (velocity--move-to-next-section-by-separator "^\\* " from-pos))
+
+(defun velocity-org-get-content-unit/heading-2 (from-pos)
+  (velocity--move-to-next-section-by-separator "^\\*\\* " from-pos))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INTERNALS
