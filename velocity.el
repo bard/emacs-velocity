@@ -47,7 +47,7 @@
 ;; USER API
 
 ;;;##autoload
-(defun velocity-define-searches (&rest defs)
+(defun velocity-define-searches-1 (&rest defs)
   (setq velocity-searches
         (loop for (name . searches) in defs
               collect (cons name searches))))
