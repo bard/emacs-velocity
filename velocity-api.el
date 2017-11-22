@@ -121,15 +121,14 @@
   (stream-make
    (with-current-buffer (plist-get data :buffer)
      (save-excursion
-       (goto-char (or pos 1))
-       (let ((bounds (funcall next-section-fn)))
+       (let ((bounds (funcall next-section-fn (or pos 1))))
          (if bounds
              (cons (append data (list :start-pos (car bounds)
                                       :end-pos (cdr bounds)))
 
                    (-buffer-section-stream next-section-fn
                                            data
-                                           (point)))
+                                           (cdr bounds)))
            nil))))))
 
 (defun -buffer-section-matches-regexps-p (section regexps)
@@ -152,7 +151,8 @@
     (cons (concat "\\<" (car parts))
           (cdr parts))))
 
-(defun -move-to-next-section-by-separator (section-separator)
+(defun -move-to-next-section-by-separator (section-separator from-pos)
+  (goto-char from-pos)
   (when (re-search-forward section-separator nil t)
     (let ((section-start (match-beginning 0))
           (section-end (or (and (re-search-forward section-separator nil t )

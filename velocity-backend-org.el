@@ -35,8 +35,8 @@
       (plist-put :title snippet-title)
       (plist-put :body snippet-body))))
 
-(defun velocity-org-next-section ()
-  (velocity--move-to-next-section-by-separator "^\\* "))
+(defun velocity-org-next-section (from-pos)
+  (velocity--move-to-next-section-by-separator "^\\* " from-pos))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INTERNALS

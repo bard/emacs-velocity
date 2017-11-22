@@ -30,11 +30,10 @@
       (plist-put :title snippet-title)
       (plist-put :body snippet-body))))
 
-(defun velocity-markdown-next-section ()
-  (if (= (point) (point-max))
+(defun velocity-markdown-next-section (from-pos)
+  (if (= from-pos (point-max))
       nil
-    (goto-char (point-max))
-    (cons 1 (point))))
+    (cons 1 (point-max))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; META
