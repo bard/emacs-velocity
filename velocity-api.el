@@ -64,6 +64,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INTERNALS
 
+(require 'subr-x)
 (require 'stream)
 (require 'dash)
 
