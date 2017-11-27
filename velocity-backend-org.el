@@ -44,10 +44,10 @@
       (plist-put :body snippet-body))))
 
 (defun velocity-org-get-content-unit/heading-1 (from-pos)
-  (velocity--move-to-next-section-by-separator "^\\* " from-pos))
+  (velocity--move-to-next-separator "^\\* " from-pos))
 
 (defun velocity-org-get-content-unit/heading-2 (from-pos)
-  (velocity--move-to-next-section-by-separator "^\\*\\* " from-pos))
+  (velocity--move-to-next-separator "^\\*\\* " from-pos))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INTERNALS

@@ -10,19 +10,19 @@
 (velocity-register-backend
  'markdown-file
  (list :filter-result-fn 'velocity-markdown-filter-result
-       :next-section-fn 'velocity-markdown-get-content-unit/file
+       :get-content-unit-fn 'velocity-markdown-get-content-unit/file
        :create-fn 'velocity-markdown-create))
 
 (velocity-register-backend
  'markdown-heading-1
  (list :filter-result-fn 'velocity-markdown-filter-result
-       :next-section-fn 'velocity-markdown-get-content-unit/heading-1
+       :get-content-unit-fn 'velocity-markdown-get-content-unit/heading-1
        :create-fn 'velocity-markdown-create))
 
 (velocity-register-backend
  'markdown-heading-2
  (list :filter-result-fn 'velocity-markdown-filter-result
-       :next-section-fn 'velocity-markdown-get-content-unit/heading-2
+       :get-content-unit-fn 'velocity-markdown-get-content-unit/heading-2
        :create-fn 'velocity-markdown-create))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,10 +48,10 @@
     (cons 1 (point-max))))
 
 (defun velocity-markdown-get-content-unit/heading-1 (from-pos)
-  (velocity--move-to-next-section-by-separator "^\\# " from-pos))
+  (velocity--move-to-next-separator "^\\# " from-pos))
 
 (defun velocity-markdown-get-content-unit/heading-2 (from-pos)
-  (velocity--move-to-next-section-by-separator "^\\## " from-pos))
+  (velocity--move-to-next-separator "^\\## " from-pos))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; META

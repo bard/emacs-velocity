@@ -17,7 +17,7 @@
                                  (fileset (plist-get search-config :files)))
                             (-result-stream (plist-get search-config :files)
                                             regexps
-                                            (plist-get backend :next-section-fn)
+                                            (plist-get backend :get-content-unit-fn)
                                             (plist-get backend :visit-fn)
                                             (or (plist-get backend :filter-result-fn)
                                                 'identity))))))))
@@ -70,7 +70,7 @@
 
 (defun -result-stream (fileset
                        regexps
-                       next-section-fn
+                       get-content-unit-fn
                        visit-fn
                        filter-result-fn)
   (thread-last fileset
@@ -85,12 +85,12 @@
                                      (insert-file-contents filename))
                                    temp-buffer)))))
     (seq-map (lambda (content-handle-with-buffer)
-               (-buffer-section-stream next-section-fn
+               (-buffer-content-stream get-content-unit-fn
                                        content-handle-with-buffer)))
     (stream-concatenate)
-    (seq-filter (lambda (content-handle-with-section)
-                  (-buffer-section-matches-regexps-p content-handle-with-section
-                                                     regexps)))
+    (seq-filter (lambda (content-handle-with-bounds)
+                  (-content-matches-regexps-p content-handle-with-bounds
+                                              regexps)))
     (seq-map (lambda (content-handle)
                (with-current-buffer (plist-get content-handle :buffer)
                  (let* ((start (plist-get content-handle :start-pos))
@@ -118,24 +118,24 @@
             stream)
     (reverse result)))
 
-(defun -buffer-section-stream (next-section-fn data &optional pos)
+(defun -buffer-content-stream (get-content-unit-fn data &optional pos)
   (stream-make
    (with-current-buffer (plist-get data :buffer)
      (save-excursion
-       (let ((bounds (funcall next-section-fn (or pos 1))))
+       (let ((bounds (funcall get-content-unit-fn (or pos 1))))
          (if bounds
              (cons (append data (list :start-pos (car bounds)
                                       :end-pos (cdr bounds)))
 
-                   (-buffer-section-stream next-section-fn
+                   (-buffer-content-stream get-content-unit-fn
                                            data
                                            (cdr bounds)))
            nil))))))
 
-(defun -buffer-section-matches-regexps-p (section regexps)
-  (let* ((buffer (plist-get section :buffer))
-         (start (plist-get section :start-pos))
-         (end (plist-get section :end-pos))
+(defun -content-matches-regexps-p (content-handle regexps)
+  (let* ((buffer (plist-get content-handle :buffer))
+         (start (plist-get content-handle :start-pos))
+         (end (plist-get content-handle :end-pos))
          (case-fold-search t))
     (with-current-buffer buffer
       (velocity--region-matches-all-p start end regexps))))
@@ -152,15 +152,17 @@
     (cons (concat "\\<" (car parts))
           (cdr parts))))
 
-(defun -move-to-next-section-by-separator (section-separator from-pos)
+
+;; XXX bad name; hint at the fact that it returns extents
+(defun -move-to-next-separator (separator from-pos)
   (goto-char from-pos)
-  (when (re-search-forward section-separator nil t)
-    (let ((section-start (match-beginning 0))
-          (section-end (or (and (re-search-forward section-separator nil t )
+  (when (re-search-forward separator nil t)
+    (let ((content-start (match-beginning 0))
+          (content-end (or (and (re-search-forward separator nil t )
                                 (match-beginning 0))
                            (point-max))))
-      (goto-char section-end)
-      (cons section-start section-end))))
+      (goto-char content-end)
+      (cons content-start content-end))))
 
 (defun -score-result (result search-exprs)
   (+ (-score-string (plist-get result :title) search-exprs)
