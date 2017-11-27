@@ -53,6 +53,10 @@
               collect (cons name searches))))
 
 ;;;##autoload
+(defun velocity-define-targets-1 (&rest defs)
+  (setq velocity-targets defs))
+
+;;;##autoload
 (defun helm-velocity ()
   (interactive)
   (require 'velocity-backends)
