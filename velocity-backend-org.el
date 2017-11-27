@@ -12,21 +12,21 @@
  (list :visit-fn 'velocity-org-visit
        :create-fn 'velocity-org-create/heading-1
        :filter-result-fn 'velocity-org-filter-result
-       :next-section-fn 'velocity-org-get-content-unit/heading-1))
+       :get-content-unit-fn 'velocity-org-get-content-unit/heading-1))
 
 (velocity-register-backend
  'org-heading-2
  (list :visit-fn 'velocity-org-visit
        :create-fn 'velocity-org-create/heading-1
        :filter-result-fn 'velocity-org-filter-result
-       :next-section-fn 'velocity-org-get-content-unit/heading-2))
+       :get-content-unit-fn 'velocity-org-get-content-unit/heading-2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CALLBACKS
 
 (defun velocity-org-visit ()
   (goto-char (point-min))
-  (org-show-subtree))
+  (org-show-entry))
 
 (defun velocity-org-create/heading-1 (title)
   (goto-char (point-min))
