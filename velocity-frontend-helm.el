@@ -10,7 +10,8 @@
   (helm :sources (append (loop for (name . def) in velocity-searches
                                collect (helm-velocity--make-source-for-search name))
                          (list helm-source-velocity-create))
-        :buffer "*helm-velocity*"))
+        :buffer "*helm-velocity*"
+        :truncate-lines t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; HELM SOURCE
