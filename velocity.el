@@ -32,6 +32,8 @@
 
 ;; Inspired to Notational Velocity.
 
+;; See README.md for configuration and usage.
+
 ;;; Code:
 
 (defvar velocity-searches
