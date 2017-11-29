@@ -24,14 +24,14 @@
 
 (defun visit (content-handle &optional search-query)
   (switch-to-buffer (-get-content-buffer content-handle))
-
-  (when-let ((visit-fn (plist-get content-handle :visit-fn)))
-    (funcall visit-fn))
-
+  
   (when search-query
     (let ((split-pat (split-string search-query))
           (case-fold-search t))
-      (re-search-forward (car split-pat) nil t))))
+      (re-search-forward (car split-pat) nil t)))
+
+  (when-let ((visit-fn (plist-get content-handle :visit-fn)))
+    (funcall visit-fn)))
 
 (defun create (content-handle)
   (let ((filename (plist-get content-handle :filename))

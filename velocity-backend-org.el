@@ -26,7 +26,6 @@
 ;; CALLBACKS
 
 (defun velocity-org-visit ()
-  (goto-char (point-min))
   (org-show-entry))
 
 (defun velocity-org-create/heading-1 (title)
