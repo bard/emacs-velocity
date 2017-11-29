@@ -7,7 +7,7 @@
 ;; Maintainer: Massimiliano Mirra <hyperstruct@gmail.com>
 ;; Keywords: files, hypermedia, matching, outlines
 ;; URL: http://github.com/bard/emacs-velocity
-;; Package-Requires: ((dash "2.12"))
+;; Package-Requires: ((dash "2.12") (stream "2.2.4") (names "20151201.0"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
