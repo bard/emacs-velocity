@@ -32,7 +32,7 @@
   (goto-char (point-min))
   (insert "* " title "\n\n")
   (list :start-pos (point-min)
-        :end-pos (point)))
+        :end-pos (- (point) 1)))
 
 (defun velocity-org-filter-result (basic-result)
   (let* ((snippet-lines (split-string (plist-get basic-result :snippet) "\n"))
