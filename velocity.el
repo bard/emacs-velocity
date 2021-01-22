@@ -54,10 +54,11 @@
      :options
      ((:files (repeat :tag "Files" string))
       (:backend (choice :tag "Backend"
-                        :value markdown-file
-                        (const markdown-file)
+                        :value org-file
+                        (const org-file)
                         (const org-heading-1)
-                        (const org-heading-2)))))))
+                        (const org-heading-2)
+                        (const markdown-file)))))))
 
 (defvar velocity-targets
   '())

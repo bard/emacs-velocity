@@ -7,6 +7,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; REGISTRATION
+(velocity-register-backend
+ 'org-file
+ (list :create-fn 'velocity-org-create/file
+       :filter-result-fn 'velocity-org-filter-result
+       :get-content-unit-fn 'velocity-org-get-content-unit/file))
 
 (velocity-register-backend
  'org-heading-1
@@ -28,6 +33,12 @@
 (defun velocity-org-visit ()
   (org-show-entry))
 
+(defun velocity-org-create/file (title)
+  (goto-char (point-min))
+  (insert "# " title "\n\n")
+  (list :start-pos (point-min)
+        :end-pos (point)))
+
 (defun velocity-org-create/heading-1 (title)
   (goto-char (point-min))
   (insert "* " title "\n\n")
@@ -41,6 +52,11 @@
     (thread-first basic-result
       (plist-put :title snippet-title)
       (plist-put :body snippet-body))))
+
+(defun velocity-org-get-content-unit/file (from-pos)
+  (if (= from-pos (point-max))
+      nil
+    (cons 1 (point-max))))
 
 (defun velocity-org-get-content-unit/heading-1 (from-pos)
   (velocity--move-to-next-separator "^\\* " from-pos))
