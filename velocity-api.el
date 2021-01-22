@@ -2,20 +2,22 @@
 
 ;;; PUBLIC API
 
+(defvar velocity-backends)
+
 (defun velocity-search (search-configs search-query)
   (velocity--stream-to-list
    (stream-concatenate
-    (stream (loop for search-config in search-configs
-                  with regexps = (velocity--search-query-to-regexps search-query)
-                  collect (let* ((backend-id (plist-get search-config :backend))
-                                 (backend (plist-get velocity-backends backend-id))
-                                 (fileset (plist-get search-config :files)))
-                            (velocity--result-stream (plist-get search-config :files)
-                                                     regexps
-                                                     (plist-get backend :get-content-unit-fn)
-                                                     (plist-get backend :visit-fn)
-                                                     (or (plist-get backend :filter-result-fn)
-                                                         'identity))))))))
+    (stream (cl-loop for search-config in search-configs
+                     with regexps = (velocity--search-query-to-regexps search-query)
+                     collect (let* ((backend-id (plist-get search-config :backend))
+                                    (backend (plist-get velocity-backends backend-id))
+                                    (_fileset (plist-get search-config :files)))
+                               (velocity--result-stream (plist-get search-config :files)
+                                                        regexps
+                                                        (plist-get backend :get-content-unit-fn)
+                                                        (plist-get backend :visit-fn)
+                                                        (or (plist-get backend :filter-result-fn)
+                                                            'identity))))))))
 
 (defun velocity-visit (content-handle &optional search-query)
   (switch-to-buffer (velocity--get-content-buffer content-handle))
@@ -31,7 +33,7 @@
 (defun velocity-create (content-handle)
   (let ((filename (plist-get content-handle :filename))
         (create-fn (plist-get content-handle :create-fn))
-        (visit-fn (plist-get content-handle :visit-fn))
+        (_visit-fn (plist-get content-handle :visit-fn))
         (title (plist-get content-handle :title)))
     (visit (append content-handle
                    (with-current-buffer (velocity--get-file-buffer filename)
@@ -39,11 +41,11 @@
 
 ;; XXX accesses global
 (defun velocity-creation-candidates (title)
-  (loop for target-def in velocity-targets
-        collect (let* ((target-pattern (plist-get target-def :file))
-                       (target-path (format target-pattern title)))
-                  (list :filename target-path
-                        :backend (plist-get target-def :backend)))))
+  (cl-loop for target-def in velocity-targets
+           collect (let* ((target-pattern (plist-get target-def :file))
+                          (target-path (format target-pattern title)))
+                     (list :filename target-path
+                           :backend (plist-get target-def :backend)))))
 
 (defun velocity-compare (content-handle-1 content-handle-2 search-query)
   (let ((search-exprs (split-string search-query)))
@@ -164,8 +166,8 @@
 
 (defun velocity--score-string (string search-exprs)
   (let ((case-fold-search t))
-    (loop for expr in search-exprs
-          sum (+ (if (string-match expr string) 1 0)))))
+    (cl-loop for expr in search-exprs
+             sum (+ (if (string-match expr string) 1 0)))))
 
 (defun velocity--lookup-prop (file property-name)
   (let* ((backend-id (plist-get (velocity--search-config-for file)
@@ -175,11 +177,11 @@
 
 (defun velocity--search-config-for (fileset)
   (let ((search-configs
-         (loop for (name . configs) in velocity-searches
-               append configs)))
+         (cl-loop for (_name . configs) in velocity-searches
+                  append configs)))
     (velocity--find (lambda (config)
-             (velocity--contains? (plist-get config :files) fileset))
-           search-configs)))
+                      (velocity--contains? (plist-get config :files) fileset))
+                    search-configs)))
 
 (defun velocity--get-content-buffer (content-handle)
   (let ((file-buffer (velocity--get-file-buffer (plist-get content-handle :filename)))
