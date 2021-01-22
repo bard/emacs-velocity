@@ -45,14 +45,6 @@
   '(repeat
     (plist
      :tag "Spec"
-     :validate
-     (lambda (widget)
-       (let ((files (plist-get (widget-value widget) :files)))
-         (unless (and files (> (length files) 0))
-           (widget-put
-            widget :error
-            (format-message "Every search spec must define at least one file"))
-           widget)))
      :options
      ((:files (repeat :tag "Files" string))
       (:backend (choice :tag "Backend"
@@ -60,17 +52,37 @@
                         (const org-file)
                         (const org-heading-1)
                         (const org-heading-2)
-                        (const markdown-file)))))))
+                        (const markdown-file))))
+     :validate
+     (lambda (widget)
+       (let ((files (plist-get (widget-value widget) :files)))
+         (unless (and files (> (length files) 0))
+           (widget-put
+            widget :error
+            (format-message "Every search spec must define at least one file"))
+           widget))))))
 
-(defvar velocity-targets
-  '())
-
-(defvar velocity-backends
-  '())
-
-;;;##autoload
-(defun velocity-define-targets-1 (&rest defs)
-  (setq velocity-targets defs))
+(defcustom velocity-targets nil
+  "Where to create new entries."
+  :type
+  '(repeat
+    (plist
+     :options
+     ((:file (string :tag "File"))
+      (:backend (choice :tag "Backend"
+                        :value org-file
+                        (const org-file)
+                        (const org-heading-1)
+                        (const org-heading-2)
+                        (const markdown-file))))
+     :validate
+     (lambda (widget)
+       (unless (and (plist-member (widget-value widget) :file)
+                    (plist-member (widget-value widget) :backend))
+         (widget-put
+          widget :error
+          (format-message "Target spec must define :file and :backend"))
+         widget)))))
 
 ;;;##autoload
 (defun helm-velocity ()
