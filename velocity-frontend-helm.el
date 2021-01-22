@@ -19,11 +19,10 @@
     :nohighlight t
     :candidate-number-limit 15
     :action 'helm-velocity--action-visit
+    :candidates 'helm-velocity--candidates-search
     :persistent-action 'helm-velocity--persistent-action-visit
-    :candidates '()
-    :volatile t
     :follow 1
-    :filtered-candidate-transformer 'helm-velocity--candidates-search))
+    :match-dynamic t))
 
 (defvar helm-source-velocity-create
   (helm-build-sync-source
@@ -31,19 +30,19 @@
     :requires-pattern 15
     :nohighlight t
     :volatile t
-    :filtered-candidate-transformer 'helm-velocity--candidates-create
+    :match-dynamic t
+    :candidates 'helm-velocity--candidates-create
     :action 'helm-velocity--action-create))
 
 ;;; HELM CALLBACKS FOR SEARCH SOURCE
 
-(defun helm-velocity--candidates-search (candidates source-name)
+(defun helm-velocity--candidates-search ()
   (let* ((search-query helm-pattern)
          (first-n (lambda (n list) (-slice list 0 n))))
     (thread-last search-query
       (velocity-search velocity-searches)
       (-sort (lambda (r1 r2)
                (velocity-compare r1 r2 search-query)))
-      (funcall first-n (helm-attr 'candidate-number-limit source-name))
       (mapcar (lambda (result)
                 (cons (concat (plist-get result :title)
                               " "
@@ -59,7 +58,7 @@
 
 ;;; HELM CALLBACKS FOR CREATE SOURCE
 
-(defun helm-velocity--candidates-create (candidates source)
+(defun helm-velocity--candidates-create ()
   (loop for target in (velocity-creation-candidates helm-pattern)
         with highlight-face = '(:foreground "#ffa724" :weight bold)
         collect (let* ((target-path (plist-get target :filename))
