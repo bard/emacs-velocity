@@ -36,8 +36,28 @@
 
 ;;; Code:
 
-(defvar velocity-searches
-  '())
+(defcustom velocity-searches
+  nil
+  "Where to look for text."
+  :type
+  '(repeat
+    (plist
+     :tag "Spec"
+     :validate
+     (lambda (widget)
+       (let ((files (plist-get (widget-value widget) :files)))
+         (unless (and files (> (length files) 0))
+           (widget-put
+            widget :error
+            (format-message "Every search spec must define at least one file"))
+           widget)))
+     :options
+     ((:files (repeat :tag "Files" string))
+      (:backend (choice :tag "Backend"
+                        :value markdown-file
+                        (const markdown-file)
+                        (const org-heading-1)
+                        (const org-heading-2)))))))
 
 (defvar velocity-targets
   '())
@@ -47,12 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; USER API
-
-;;;##autoload
-(defun velocity-define-searches-1 (&rest defs)
-  (setq velocity-searches
-        (loop for (name . searches) in defs
-              collect (cons name searches))))
 
 ;;;##autoload
 (defun velocity-define-targets-1 (&rest defs)

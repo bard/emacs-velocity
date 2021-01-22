@@ -7,9 +7,8 @@
 ;; COMMANDS
 
 (defun helm-velocity-1 ()
-  (helm :sources (append (loop for (name . def) in velocity-searches
-                               collect (helm-velocity--make-source-for-search name))
-                         (list helm-source-velocity-create))
+  (helm :sources (list (helm-velocity--make-source-for-search "Results")
+                       helm-source-velocity-create)
         :buffer "*helm-velocity*"
         :truncate-lines t))
 
@@ -43,13 +42,9 @@
 
 (defun helm-velocity--candidates-search (candidates source-name)
   (let* ((search-query helm-pattern)
-         (search-section-name (cdr (assoc 'name source-name)))
-         (search-section-configs (cdr (assoc search-section-name
-                                             velocity-searches)))
          (first-n (lambda (n list) (-slice list 0 n))))
-
     (thread-last search-query
-      (velocity-search search-section-configs)
+      (velocity-search velocity-searches)
       (-sort (lambda (r1 r2)
                (velocity-compare r1 r2 search-query)))
       (funcall first-n (helm-attr 'candidate-number-limit source-name))
