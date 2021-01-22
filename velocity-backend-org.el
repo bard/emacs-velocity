@@ -69,6 +69,7 @@
     velocity-org--strip-stars
     velocity-org--strip-tags
     velocity-org--remove-bracket-links
+    velocity-org--surface-title
     (propertize 'face 'org-level-1)))
 
 (defun velocity-org--prettify-body (body)
@@ -94,6 +95,11 @@
   (replace-regexp-in-string "\\( *:[^ ]*:\\).*\\'"
                             ""
                             title nil nil 1))
+
+(defun velocity-org--surface-title (title)
+  (replace-regexp-in-string "^#\\+title: "
+                            ""
+                            title))
 
 (defun velocity-org--strip-properties (body)
   (with-temp-buffer
