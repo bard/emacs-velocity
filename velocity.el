@@ -36,6 +36,11 @@
 
 ;;; Code:
 
+(defvar velocity-backends '())
+(require 'velocity-api)
+(require 'velocity-backend-org)
+(require 'velocity-backend-markdown)
+
 ;;; USER INTERFACE
 
 (defcustom velocity-searches
@@ -87,7 +92,6 @@
 ;;;##autoload
 (defun helm-velocity ()
   (interactive)
-  (require 'velocity-backends)
   (require 'helm)
   (require 'velocity-frontend-helm)
   (helm-velocity-1))
@@ -95,7 +99,6 @@
 ;;;##autoload
 (defun ivy-velocity ()
   (interactive)
-  (require 'velocity-backends)
   (require 'ivy)
   (require 'velocity-frontend-ivy)
   (error "Not implemented yet."))
