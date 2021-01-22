@@ -1,29 +1,25 @@
 ;;; -*- lexical-binding: t -*-
 
-(eval-when-compile (require 'names))
-
-(define-namespace velocity-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; PUBLIC API
 
-(defun search (search-configs search-query)
-  (-stream-to-list
+(defun velocity-search (search-configs search-query)
+  (velocity--stream-to-list
    (stream-concatenate
     (stream (loop for search-config in search-configs
-                  with regexps = (-search-query-to-regexps search-query)
+                  with regexps = (velocity--search-query-to-regexps search-query)
                   collect (let* ((backend-id (plist-get search-config :backend))
                                  (backend (plist-get velocity-backends backend-id))
                                  (fileset (plist-get search-config :files)))
-                            (-result-stream (plist-get search-config :files)
-                                            regexps
-                                            (plist-get backend :get-content-unit-fn)
-                                            (plist-get backend :visit-fn)
-                                            (or (plist-get backend :filter-result-fn)
-                                                'identity))))))))
+                            (velocity--result-stream (plist-get search-config :files)
+                                                     regexps
+                                                     (plist-get backend :get-content-unit-fn)
+                                                     (plist-get backend :visit-fn)
+                                                     (or (plist-get backend :filter-result-fn)
+                                                         'identity))))))))
 
-(defun visit (content-handle &optional search-query)
-  (switch-to-buffer (-get-content-buffer content-handle))
+(defun velocity-visit (content-handle &optional search-query)
+  (switch-to-buffer (velocity--get-content-buffer content-handle))
   
   (when search-query
     (let ((split-pat (split-string search-query))
@@ -33,30 +29,30 @@
   (when-let ((visit-fn (plist-get content-handle :visit-fn)))
     (funcall visit-fn)))
 
-(defun create (content-handle)
+(defun velocity-create (content-handle)
   (let ((filename (plist-get content-handle :filename))
         (create-fn (plist-get content-handle :create-fn))
         (visit-fn (plist-get content-handle :visit-fn))
         (title (plist-get content-handle :title)))
     (visit (append content-handle
-                   (with-current-buffer (-get-file-buffer filename)
+                   (with-current-buffer (velocity--get-file-buffer filename)
                      (funcall create-fn title))))))
 
 ;; XXX accesses global
-(defun creation-candidates (title)
+(defun velocity-creation-candidates (title)
   (loop for target-def in velocity-targets
         collect (let* ((target-pattern (plist-get target-def :file))
                        (target-path (format target-pattern title)))
                   (list :filename target-path
                         :backend (plist-get target-def :backend)))))
 
-(defun compare (content-handle-1 content-handle-2 search-query)
+(defun velocity-compare (content-handle-1 content-handle-2 search-query)
   (let ((search-exprs (split-string search-query)))
-    (> (-score-result content-handle-1 search-exprs)
-       (-score-result content-handle-2 search-exprs))))
+    (> (velocity--score-result content-handle-1 search-exprs)
+       (velocity--score-result content-handle-2 search-exprs))))
 
 ;; XXX accesses global
-(defun register-backend (name callbacks)
+(defun velocity-register-backend (name callbacks)
   (setq velocity-backends
         (plist-put velocity-backends name
                    callbacks)))
@@ -68,11 +64,11 @@
 (require 'stream)
 (require 'dash)
 
-(defun -result-stream (fileset
-                       regexps
-                       get-content-unit-fn
-                       visit-fn
-                       filter-result-fn)
+(defun velocity--result-stream (fileset
+                                regexps
+                                get-content-unit-fn
+                                visit-fn
+                                filter-result-fn)
   (thread-last fileset
     (-mapcat #'file-expand-wildcards)
     (-map #'expand-file-name)
@@ -85,12 +81,12 @@
                                      (insert-file-contents filename))
                                    temp-buffer)))))
     (seq-map (lambda (content-handle-with-buffer)
-               (-buffer-content-stream get-content-unit-fn
-                                       content-handle-with-buffer)))
+               (velocity--buffer-content-stream get-content-unit-fn
+                                                content-handle-with-buffer)))
     (stream-concatenate)
     (seq-filter (lambda (content-handle-with-bounds)
-                  (-content-matches-regexps-p content-handle-with-bounds
-                                              regexps)))
+                  (velocity--content-matches-regexps-p content-handle-with-bounds
+                                                       regexps)))
     (seq-map (lambda (content-handle)
                (with-current-buffer (plist-get content-handle :buffer)
                  (let* ((start (plist-get content-handle :start-pos))
@@ -110,7 +106,7 @@
                (funcall filter-result-fn content-handle)))
     ))
 
-(defun -stream-to-list (stream)
+(defun velocity--stream-to-list (stream)
   "Eagerly traverse STREAM and return a list of its elements."
   (let (result)
     (seq-do (lambda (elt)
@@ -118,7 +114,7 @@
             stream)
     (reverse result)))
 
-(defun -buffer-content-stream (get-content-unit-fn data &optional pos)
+(defun velocity--buffer-content-stream (get-content-unit-fn data &optional pos)
   (stream-make
    (with-current-buffer (plist-get data :buffer)
      (save-excursion
@@ -127,12 +123,12 @@
              (cons (append data (list :start-pos (car bounds)
                                       :end-pos (cdr bounds)))
 
-                   (-buffer-content-stream get-content-unit-fn
+                   (velocity--buffer-content-stream get-content-unit-fn
                                            data
                                            (cdr bounds)))
            nil))))))
 
-(defun -content-matches-regexps-p (content-handle regexps)
+(defun velocity--content-matches-regexps-p (content-handle regexps)
   (let* ((buffer (plist-get content-handle :buffer))
          (start (plist-get content-handle :start-pos))
          (end (plist-get content-handle :end-pos))
@@ -140,21 +136,21 @@
     (with-current-buffer buffer
       (velocity--region-matches-all-p start end regexps))))
 
-(defun -region-matches-all-p (start end regexps)
+(defun velocity--region-matches-all-p (start end regexps)
   (-all? (lambda (regexp)
            (save-excursion
              (goto-char start)
              (re-search-forward regexp end t)))
          regexps))
 
-(defun -search-query-to-regexps (search-query)
+(defun velocity--search-query-to-regexps (search-query)
   (let ((parts (split-string search-query " ")))
     (cons (concat "\\<" (car parts))
           (cdr parts))))
 
 
 ;; XXX bad name; hint at the fact that it returns extents
-(defun -move-to-next-separator (separator from-pos)
+(defun velocity--move-to-next-separator (separator from-pos)
   (goto-char from-pos)
   (when (re-search-forward separator nil t)
     (let ((content-start (match-beginning 0))
@@ -164,31 +160,31 @@
       (goto-char content-end)
       (cons content-start content-end))))
 
-(defun -score-result (result search-exprs)
-  (+ (-score-string (plist-get result :title) search-exprs)
-     (-score-string (plist-get result :filename) search-exprs)))
+(defun velocity--score-result (result search-exprs)
+  (+ (velocity--score-string (plist-get result :title) search-exprs)
+     (velocity--score-string (plist-get result :filename) search-exprs)))
 
-(defun -score-string (string search-exprs)
+(defun velocity--score-string (string search-exprs)
   (let ((case-fold-search t))
     (loop for expr in search-exprs
           sum (+ (if (string-match expr string) 1 0)))))
 
-(defun -lookup-prop (file property-name)
-  (let* ((backend-id (plist-get (-search-config-for file)
+(defun velocity--lookup-prop (file property-name)
+  (let* ((backend-id (plist-get (velocity--search-config-for file)
                                 :backend))
          (backend (plist-get velocity-backends backend-id)))
     (plist-get backend property-name)))
 
-(defun -search-config-for (fileset)
+(defun velocity--search-config-for (fileset)
   (let ((search-configs
          (loop for (name . configs) in velocity-searches
                append configs)))
-    (-find (lambda (config)
-             (-contains? (plist-get config :files) fileset))
+    (velocity--find (lambda (config)
+             (velocity--contains? (plist-get config :files) fileset))
            search-configs)))
 
-(defun -get-content-buffer (content-handle)
-  (let ((file-buffer (-get-file-buffer (plist-get content-handle :filename)))
+(defun velocity--get-content-buffer (content-handle)
+  (let ((file-buffer (velocity--get-file-buffer (plist-get content-handle :filename)))
         (start-pos (plist-get content-handle :start-pos))
         (end-pos (plist-get content-handle :end-pos))
         (title (plist-get content-handle :title)))
@@ -196,15 +192,15 @@
           (and (eq start-pos (point-min))
                (eq end-pos (point-max))))
         file-buffer
-      (with-current-buffer (-make-indirect-buffer file-buffer title)
+      (with-current-buffer (velocity--make-indirect-buffer file-buffer title)
         (narrow-to-region start-pos end-pos)
         (current-buffer)))))
 
-(defun -get-file-buffer (filename)
+(defun velocity--get-file-buffer (filename)
   (or (get-file-buffer filename)
       (find-file-noselect filename)))
 
-(defun -make-indirect-buffer (base-buffer name)
+(defun velocity--make-indirect-buffer (base-buffer name)
   "Create indirect buffer of `base-buffer' and name it `name'. If
 buffer `name' exists already and is an indirect buffer of
 `base-buffer', return it instead."
@@ -218,8 +214,6 @@ buffer `name' exists already and is an indirect buffer of
              (equal (buffer-base-buffer existing-indirect) base-buffer))
         existing-indirect
       (make-indirect-buffer base-buffer indirect-name t))))
-
-) ;; namespace velocity-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; META
