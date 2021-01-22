@@ -43,6 +43,12 @@
 
 ;;; USER INTERFACE
 
+(defgroup velocity nil
+  "Search across notes in multiple formats."
+  :group 'convenience
+  :prefix "velocity-"
+  :link '(url-link "https://github.com/bard/emacs-velocity"))
+
 (defcustom velocity-searches
   nil
   "Where to look for text."
