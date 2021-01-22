@@ -1,11 +1,8 @@
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; DEPENDENCIES
+;;; DEPENDENCIES
 
 (require 'velocity-api)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; REGISTRATION
+;;; REGISTRATION
 
 (velocity-register-backend
  'markdown-file
@@ -25,8 +22,7 @@
        :get-content-unit-fn 'velocity-markdown-get-content-unit/heading-2
        :create-fn 'velocity-markdown-create))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; CALLBACKS
+;;; CALLBACKS
 
 (defun velocity-markdown-create (title)
   (goto-char (point-min))
@@ -53,7 +49,6 @@
 (defun velocity-markdown-get-content-unit/heading-2 (from-pos)
   (velocity--move-to-next-separator "^\\## " from-pos))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; META
+;;; META
 
 (provide 'velocity-backend-markdown)

@@ -1,12 +1,10 @@
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; DEPENDENCIES
+;;; DEPENDENCIES
 
 (require 'org)
 (require 'velocity-api)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; REGISTRATION
+;;; REGISTRATION
+
 (velocity-register-backend
  'org-file
  (list :create-fn 'velocity-org-create/file
@@ -27,8 +25,7 @@
        :filter-result-fn 'velocity-org-filter-result
        :get-content-unit-fn 'velocity-org-get-content-unit/heading-2))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; CALLBACKS
+;;; CALLBACKS
 
 (defun velocity-org-visit ()
   (org-show-entry))
@@ -108,7 +105,6 @@
           (delete-region start (point)))))
     (string-trim (buffer-string))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; META
+;;; META
 
 (provide 'velocity-backend-org)

@@ -1,10 +1,8 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; DEPENDENCIES
+;;; DEPENDENCIES
 
 (require 'velocity-api)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; COMMANDS
+;;; COMMANDS
 
 (defun helm-velocity-1 ()
   (helm :sources (list (helm-velocity--make-source-for-search "Results")
@@ -12,8 +10,7 @@
         :buffer "*helm-velocity*"
         :truncate-lines t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; HELM SOURCE
+;;; HELM SOURCE
 
 (defun helm-velocity--make-source-for-search (search-name)
   (helm-build-sync-source
@@ -37,8 +34,7 @@
     :filtered-candidate-transformer 'helm-velocity--candidates-create
     :action 'helm-velocity--action-create))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; HELM CALLBACKS FOR SEARCH SOURCE
+;;; HELM CALLBACKS FOR SEARCH SOURCE
 
 (defun helm-velocity--candidates-search (candidates source-name)
   (let* ((search-query helm-pattern)
@@ -61,8 +57,7 @@
 (defun helm-velocity--action-visit (content-handle)
   (velocity-visit content-handle helm-pattern))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; HELM CALLBACKS FOR CREATE SOURCE
+;;; HELM CALLBACKS FOR CREATE SOURCE
 
 (defun helm-velocity--candidates-create (candidates source)
   (loop for target in (velocity-creation-candidates helm-pattern)
@@ -90,7 +85,6 @@
                                    :visit-fn visit-fn
                                    :create-fn create-fn)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; META
+;;; META
 
 (provide 'velocity-frontend-helm)

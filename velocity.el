@@ -36,6 +36,8 @@
 
 ;;; Code:
 
+;;; USER INTERFACE
+
 (defcustom velocity-searches
   nil
   "Where to look for text."
@@ -66,9 +68,6 @@
 (defvar velocity-backends
   '())
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; USER API
-
 ;;;##autoload
 (defun velocity-define-targets-1 (&rest defs)
   (setq velocity-targets defs))
@@ -89,8 +88,7 @@
   (require 'velocity-frontend-ivy)
   (error "Not implemented yet."))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; META
+;;; META
 
 (provide 'velocity)
 

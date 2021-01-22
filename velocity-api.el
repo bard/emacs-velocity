@@ -1,7 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; PUBLIC API
+;;; PUBLIC API
 
 (defun velocity-search (search-configs search-query)
   (velocity--stream-to-list
@@ -57,8 +56,7 @@
         (plist-put velocity-backends name
                    callbacks)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; INTERNALS
+;;; INTERNALS
 
 (require 'subr-x)
 (require 'stream)
@@ -215,7 +213,6 @@ buffer `name' exists already and is an indirect buffer of
         existing-indirect
       (make-indirect-buffer base-buffer indirect-name t))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; META
+;;; META
 
 (provide 'velocity-api)
