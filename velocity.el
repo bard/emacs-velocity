@@ -1,6 +1,6 @@
 ;;; velocity.el --- Quickly search notes in multiple formats
 
-;; Copyright (C) 2017 Massimiliano Mirra
+;; Copyright (C) 2017-2021 Massimiliano Mirra
 
 ;; Author: Massimiliano Mirra <hyperstruct@gmail.com>
 ;; Version: 1.0
