@@ -1,4 +1,4 @@
-;;; velocity.el --- Quickly search notes in multiple formats
+;;; velocity.el --- Search, browse, create text in multiple formats
 
 ;; Copyright (C) 2017-2021 Massimiliano Mirra
 
@@ -24,13 +24,11 @@
 
 ;;; Commentary:
 
-;; Search, access, create notes in multiple formats (currently: org
-;; and markdown), with a flexible definition of what a "note" is
-;; (entire file, level-1 heading, level-2 heading), organizing results
-;; in conceptual sections (e.g. "Programming Notes", "Package
-;; READMEs").
+;; Search, browse, create text in multiple formats (org, markdown,
+;; plain text) at multiple levels (entire file, level-1 sections,
+;; level-2 sections).
 
-;; Inspired to Notational Velocity.
+;; Inspired by Notational Velocity.
 
 ;; See README.md for configuration and usage.
 
