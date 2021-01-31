@@ -17,7 +17,7 @@
       search-name
     :requires-pattern 3
     :nohighlight t
-    :candidate-number-limit 15
+    :candidate-number-limit 30
     :action 'helm-velocity--action-visit
     :candidates 'helm-velocity--candidates-search
     :persistent-action 'helm-velocity--persistent-action-visit
