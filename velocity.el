@@ -62,7 +62,8 @@
                         (const org-file)
                         (const org-heading-1)
                         (const org-heading-2)
-                        (const markdown-file))))
+                        (const markdown-file)
+                        (const text-file))))
      :validate
      (lambda (widget)
        (let ((files (plist-get (widget-value widget) :files)))
@@ -84,7 +85,8 @@
                         (const org-file)
                         (const org-heading-1)
                         (const org-heading-2)
-                        (const markdown-file))))
+                        (const markdown-file)
+                        (const text-file))))
      :validate
      (lambda (widget)
        (unless (and (plist-member (widget-value widget) :file)
