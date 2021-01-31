@@ -41,10 +41,10 @@ Download this repository and add it to Emacs's `load-path`. MELPA coming soon.
 
 ## Configuration
 
-Bind `helm-velocity` to a key combination, e.g.:
+Bind `velocity` to a key combination, e.g.:
 
 ```
-(global-set-key (kbd "C-c r") 'helm-velocity)
+(global-set-key (kbd "C-c r") velocity)
 ```
 
 Set or customize the `velocity-searches` variable to specify what files should be searched and how. For example:
@@ -81,7 +81,7 @@ Set or customize the `velocity-targets` variable to specify where new content sh
 
 ### Searching
 
-Invoke `helm-velocity` and write some words. Matching notes will appear in the helm buffer.
+Invoke `velocity` and write some words. Matching notes will appear in the helm buffer.
 
 Follow-mode is enabled by default. To disable it, invoke `C-c C-f` during the helm session.
 
@@ -92,4 +92,4 @@ When the input is at least 15 characters, Velocity guesses you're writing the ti
 ## Related work
 
 - [Notational Velocity](http://notational.net/)
-- Other Emacs modules with similar purposes: [org-velocity](http://orgmode.org/worg/org-contrib/org-velocity.html), [deft](https://jblevins.org/projects/deft/), [helm-org](https://github.com/emacs-helm/helm/blob/master/helm-org.el), [helm-rifle](https://github.com/alphapapa/helm-org-rifle), [helm-browse](https://github.com/michael-heerdegen/helm-browse)
+- Other Emacs modules with similar purposes: [org-velocity](http://orgmode.org/worg/org-contrib/org-velocity.html), [deft](https://jblevins.org/projects/deft/), [helm-org](https://github.com/emacs-helm/helm/blob/master/helm-org.el), [helm-rifle](https://github.com/alphapapa/helm-org-rifle), [helm-browse](https://github.com/michael-heerdegen/helm-browse).

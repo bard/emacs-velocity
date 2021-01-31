@@ -7,7 +7,7 @@
 ;; Maintainer: Massimiliano Mirra <hyperstruct@gmail.com>
 ;; Keywords: files, hypermedia, matching, outlines
 ;; URL: http://github.com/bard/emacs-velocity
-;; Package-Requires: ((dash "2.12") (stream "2.2.4"))
+;; Package-Requires: ((emacs "25.1") (dash "2.12") (stream "2.2.4"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@
 (require 'velocity-api)
 (require 'velocity-backend-org)
 (require 'velocity-backend-markdown)
+(require 'velocity-frontend-helm)
 
 ;;; USER INTERFACE
 
@@ -94,18 +95,9 @@
          widget)))))
 
 ;;;##autoload
-(defun helm-velocity ()
+(defun velocity ()
   (interactive)
-  (require 'helm)
-  (require 'velocity-frontend-helm)
-  (helm-velocity-1))
-
-;;;##autoload
-(defun ivy-velocity ()
-  (interactive)
-  (require 'ivy)
-  (require 'velocity-frontend-ivy)
-  (error "Not implemented yet."))
+  (velocity--helm))
 
 ;;; META
 

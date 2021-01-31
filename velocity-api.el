@@ -4,7 +4,12 @@
 
 (defvar velocity-backends)
 
-(defun velocity-search (search-configs search-query)
+(defun velocity-register-backend (name callbacks)
+  (setq velocity-backends
+        (plist-put velocity-backends name
+                   callbacks)))
+
+(defun velocity--search (search-configs search-query)
   (velocity--stream-to-list
    (stream-concatenate
     (stream (cl-loop for search-config in search-configs
@@ -19,7 +24,7 @@
                                                         (or (plist-get backend :filter-result-fn)
                                                             'identity))))))))
 
-(defun velocity-visit (content-handle &optional search-query)
+(defun velocity--visit (content-handle &optional search-query)
   (switch-to-buffer (velocity--get-content-buffer content-handle))
   
   (when search-query
@@ -30,7 +35,7 @@
   (when-let ((visit-fn (plist-get content-handle :visit-fn)))
     (funcall visit-fn)))
 
-(defun velocity-create (content-handle)
+(defun velocity--create (content-handle)
   (let ((filename (plist-get content-handle :filename))
         (create-fn (plist-get content-handle :create-fn))
         (_visit-fn (plist-get content-handle :visit-fn))
@@ -39,24 +44,17 @@
                    (with-current-buffer (velocity--get-file-buffer filename)
                      (funcall create-fn title))))))
 
-;; XXX accesses global
-(defun velocity-creation-candidates (title)
+(defun velocity--creation-candidates (title)
   (cl-loop for target-def in velocity-targets
            collect (let* ((target-pattern (plist-get target-def :file))
                           (target-path (format target-pattern title)))
                      (list :filename target-path
                            :backend (plist-get target-def :backend)))))
 
-(defun velocity-compare (content-handle-1 content-handle-2 search-query)
+(defun velocity--compare (content-handle-1 content-handle-2 search-query)
   (let ((search-exprs (split-string search-query)))
     (> (velocity--score-result content-handle-1 search-exprs)
        (velocity--score-result content-handle-2 search-exprs))))
-
-;; XXX accesses global
-(defun velocity-register-backend (name callbacks)
-  (setq velocity-backends
-        (plist-put velocity-backends name
-                   callbacks)))
 
 ;;; INTERNALS
 

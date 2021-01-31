@@ -1,65 +1,67 @@
 ;;; DEPENDENCIES
 
 (require 'velocity-api)
+(require 'helm)
 
 ;;; COMMANDS
 
-(defun helm-velocity-1 ()
-  (helm :sources (list (helm-velocity--make-source-for-search "Results")
-                       helm-source-velocity-create)
+(defun velocity--helm ()
+  (interactive)
+  (helm :sources (list (velocity--helm-make-source-for-search "Results")
+                       velocity--helm-create-source)
         :buffer "*helm-velocity*"
         :truncate-lines t))
 
 ;;; HELM SOURCE
 
-(defun helm-velocity--make-source-for-search (search-name)
+(defun velocity--helm-make-source-for-search (search-name)
   (helm-build-sync-source
       search-name
     :requires-pattern 3
     :nohighlight t
     :candidate-number-limit 30
-    :action 'helm-velocity--action-visit
-    :candidates 'helm-velocity--candidates-search
-    :persistent-action 'helm-velocity--persistent-action-visit
+    :action 'velocity--helm-action-visit
+    :candidates 'velocity--helm-candidates-search
+    :persistent-action 'velocity--helm-persistent-action-visit
     :follow 1
     :match-dynamic t))
 
-(defvar helm-source-velocity-create
+(defvar velocity--helm-create-source
   (helm-build-sync-source
       "Create"
     :requires-pattern 15
     :nohighlight t
     :volatile t
     :match-dynamic t
-    :candidates 'helm-velocity--candidates-create
-    :action 'helm-velocity--action-create))
+    :candidates 'velocity--helm-candidates-create
+    :action 'velocity--helm-action-create))
 
 ;;; HELM CALLBACKS FOR SEARCH SOURCE
 
-(defun helm-velocity--candidates-search ()
+(defun velocity--helm-candidates-search ()
   (let* ((search-query helm-pattern)
          (first-n (lambda (n list) (-slice list 0 n))))
     (thread-last search-query
-      (velocity-search velocity-searches)
+      (velocity--search velocity-searches)
       (-sort (lambda (r1 r2)
-               (velocity-compare r1 r2 search-query)))
+               (velocity--compare r1 r2 search-query)))
       (mapcar (lambda (result)
                 (cons (concat (plist-get result :title)
                               " "
                               (plist-get result :body))
                       result))))))
 
-(defun helm-velocity--persistent-action-visit (content-handle)
-  (helm-velocity--action-visit content-handle)
+(defun velocity--helm-persistent-action-visit (content-handle)
+  (velocity--helm-action-visit content-handle)
   (helm-highlight-current-line))
 
-(defun helm-velocity--action-visit (content-handle)
-  (velocity-visit content-handle helm-pattern))
+(defun velocity--helm-action-visit (content-handle)
+  (velocity--visit content-handle helm-pattern))
 
 ;;; HELM CALLBACKS FOR CREATE SOURCE
 
-(defun helm-velocity--candidates-create ()
-  (loop for target in (velocity-creation-candidates helm-pattern)
+(defun velocity--helm-candidates-create ()
+  (loop for target in (velocity--creation-candidates helm-pattern)
         with highlight-face = '(:foreground "#ffa724" :weight bold)
         collect (let* ((target-path (plist-get target :filename))
                        (target-directory-name (file-name-base
@@ -71,7 +73,7 @@
                                                 'face highlight-face))
                         target))))
 
-(defun helm-velocity--action-create (content-handle)
+(defun velocity--helm-action-create (content-handle)
   (let* ((title (string-trim helm-pattern))
          (filename (plist-get content-handle :filename))
          (backend-id (plist-get content-handle :backend))
@@ -79,10 +81,10 @@
          (visit-fn (plist-get backend :visit-fn))
          (create-fn (plist-get backend :create-fn)))
 
-    (velocity-create (append content-handle
-                             (list :title title
-                                   :visit-fn visit-fn
-                                   :create-fn create-fn)))))
+    (velocity--create (append content-handle
+                              (list :title title
+                                    :visit-fn visit-fn
+                                    :create-fn create-fn)))))
 
 ;;; META
 
